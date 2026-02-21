@@ -121,6 +121,9 @@ def load_top_stocks(market: str, top_n: int) -> list[dict]:
             if market == "us" and "ADR" in name:
                 continue
 
+            if market == "hk":
+                symbol = symbol.lstrip("0") or "0"
+
             exchange = _resolve_exchange(symbol, market, exchange_lookup)
             stocks.append({
                 "symbol": symbol,
