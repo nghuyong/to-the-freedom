@@ -1,0 +1,6 @@
+pandas>=2.0.0
+numpy>=1.24.0
+ta>=0.11.0
+tradingview-datafeed>=2.1.0
+mplfinance>=0.12.10b0
+matplotlib>=3.7.0
