@@ -1,8 +1,7 @@
 """
-批量运行股票过滤器 — 从 stocks/ 目录读取 CSV, 按市值取 Top N 并逐只检查。
+批量过滤工具 — 从 stocks/ 目录读取 CSV，按热度取 Top N 并逐只运行选股条件。
 
-CSV 按热度排序, 直接取前 N 只; 市值信息从 CSV 读取, 无需额外请求 API。
-结果会保存到 filter_results/<market>_top<N>_<timestamp>.json
+结果保存到 filter_results/<market>_top<N>_<timestamp>.json
 
 支持市场:
     us  — 美股 (stocks/us.csv)    交易所: NASDAQ / NYSE / AMEX
@@ -16,142 +15,39 @@ CSV 按热度排序, 直接取前 N 只; 市值信息从 CSV 读取, 无需额�
     python run_batch_filter.py --market hk --top 100    # 港股 Top 100
     python run_batch_filter.py --lookback 30            # 30 根日K 回看
     python run_batch_filter.py -o my_result.json        # 指定输出文件名
-
-依赖: pip install ta tvDatafeed
 """
 
 import argparse
-import csv
 import json
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-import numpy as np
-
-from stock_filter import (
+from strategy.filter import (
     check_daily_weekly_nx,
     check_above_sma200,
     check_cd_breakout,
 )
+from strategy.stocks import NumpyEncoder, load_top_stocks
 
-_STOCKS_DIR = Path(__file__).parent / "stocks"
-_CONSTITUENTS_FILE = Path(__file__).parent / "index_constituents.json"
 _RESULTS_DIR = Path(__file__).parent / "filter_results"
 
-_MIN_CAP_BILLION = 10.0
 
-_DEFAULT_EXCHANGE = {
-    "us": "NASDAQ",
-    "cn": "SSE",
-    "hk": "HKEX",
-}
-
-
-def _resolve_exchange(symbol: str, market: str, exchange_lookup: dict) -> str:
-    """根据市场和股票代码确定交易所。"""
-    if market == "cn":
-        if symbol.startswith("0") or symbol.startswith("3"):
-            return "SZSE"
-        return "SSE"
-    if market == "hk":
-        return "HKEX"
-    return exchange_lookup.get(symbol, _DEFAULT_EXCHANGE.get(market, "NASDAQ"))
-
-
-class _NumpyEncoder(json.JSONEncoder):
-    """处理 numpy 类型的 JSON 编码器。"""
-
-    def default(self, obj):
-        if isinstance(obj, (np.bool_, np.bool)):
-            return bool(obj)
-        if isinstance(obj, np.integer):
-            return int(obj)
-        if isinstance(obj, np.floating):
-            return float(obj)
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return super().default(obj)
-
-
-def _build_exchange_lookup() -> dict[str, str]:
-    """从 index_constituents.json 构建 symbol → exchange 映射。"""
-    if not _CONSTITUENTS_FILE.exists():
-        return {}
-    with open(_CONSTITUENTS_FILE, encoding="utf-8") as f:
-        data = json.load(f)
-    lookup = {}
-    for key, stocks in data.items():
-        if key == "updated_at" or not isinstance(stocks, list):
-            continue
-        for s in stocks:
-            sym = s.get("symbol", "")
-            exch = s.get("exchange", "")
-            if sym and exch:
-                lookup[sym] = exch
-    return lookup
-
-
-def load_top_stocks(market: str, top_n: int) -> list[dict]:
-    """从 stocks/{market}.csv 加载股票, 保持 CSV 原始顺序 (热度) 取前 N 只。"""
-    csv_path = _STOCKS_DIR / f"{market}.csv"
-    if not csv_path.exists():
-        available = [f.stem for f in _STOCKS_DIR.glob("*.csv")]
-        raise FileNotFoundError(f"未找到 {csv_path}, 可选市场: {available}")
-
-    exchange_lookup = _build_exchange_lookup()
-
-    stocks = []
-    with open(csv_path, encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            symbol = row.get("代码", "").strip()
-            name = row.get("名称", "").strip()
-            cap_raw = row.get("总市值", "").strip()
-            if not symbol or not cap_raw:
-                continue
-            try:
-                cap = float(cap_raw)
-            except ValueError:
-                continue
-            cap_b = round(cap / 1e9, 2)
-            if cap_b < _MIN_CAP_BILLION:
-                continue
-
-            if market == "us" and "ADR" in name:
-                continue
-
-            if market == "hk":
-                symbol = symbol.lstrip("0") or "0"
-
-            exchange = _resolve_exchange(symbol, market, exchange_lookup)
-            stocks.append({
-                "symbol": symbol,
-                "name": name,
-                "exchange": exchange,
-                "tv_code": f"{exchange}:{symbol}",
-                "market_cap_b": cap_b,
-            })
-
-    return stocks[:top_n]
-
-
-def _save_json(output_path: Path, payload: dict):
+def _save_json(output_path: Path, payload: dict) -> None:
     """原子写入 JSON 文件。"""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     tmp = output_path.with_suffix(".tmp")
     with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2, cls=_NumpyEncoder)
+        json.dump(payload, f, ensure_ascii=False, indent=2, cls=NumpyEncoder)
     tmp.replace(output_path)
 
 
 def main():
     parser = argparse.ArgumentParser(description="批量股票过滤器")
-    parser.add_argument("--market", default="us",
-                        choices=["us", "cn", "hk"],
+    parser.add_argument("--market", default="us", choices=["us", "cn", "hk"],
                         help="市场: us=美股, cn=沪深, hk=港股 (默认 us)")
     parser.add_argument("--top", type=int, default=200,
-                        help="取前 N 只, 按 CSV 原始顺序即热度 (默认 200)")
+                        help="取前 N 只，按 CSV 原始顺序（热度）(默认 200)")
     parser.add_argument("--lookback", type=int, default=30,
                         help="CD 回看日K根数 (默认 30)")
     parser.add_argument("-o", "--output", default=None,
@@ -163,10 +59,10 @@ def main():
     run_ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     run_ts_short = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    if args.output:
-        output_path = Path(args.output)
-    else:
-        output_path = _RESULTS_DIR / f"{args.market}_top{args.top}_{run_ts_short}.json"
+    output_path = (
+        Path(args.output) if args.output
+        else _RESULTS_DIR / f"{args.market}_top{args.top}_{run_ts_short}.json"
+    )
 
     payload = {
         "meta": {
@@ -187,17 +83,8 @@ def main():
     print(f"  结果文件: {output_path}")
     print(f"{'═' * 65}\n")
 
-    condition_labels = [
-        "c1_daily_weekly_nx",
-        "c2_above_sma200",
-        "c3_cd_breakout",
-    ]
-    display_labels = [
-        "1.日+周NX",
-        "2.SMA200",
-        "3.CD站稳",
-    ]
-
+    condition_keys = ["c1_daily_weekly_nx", "c2_above_sma200", "c3_cd_breakout"]
+    display_labels = ["1.日+周NX", "2.SMA200", "3.CD站稳"]
     total = len(stocks)
 
     for i, s in enumerate(stocks, 1):
@@ -211,61 +98,41 @@ def main():
               end="", flush=True)
 
         stock_result = {
-            "symbol": sym,
-            "exchange": exch,
-            "name": name,
-            "tv_code": tv_code,
-            "market_cap_b": s["market_cap_b"],
-            "conditions": {
-                "c1_daily_weekly_nx": None,
-                "c2_above_sma200": None,
-                "c3_cd_breakout": None,
-            },
+            "symbol": sym, "exchange": exch, "name": name,
+            "tv_code": tv_code, "market_cap_b": s["market_cap_b"],
+            "conditions": {k: None for k in condition_keys},
         }
 
-        try:
-            r1 = check_daily_weekly_nx(sym, exch)
-            stock_result["conditions"]["c1_daily_weekly_nx"] = r1
-        except Exception as e:
-            stock_result["conditions"]["c1_daily_weekly_nx"] = {
-                "passed": False, "detail": f"异常: {e}", "error": True}
-
-        try:
-            r2 = check_above_sma200(sym, exch)
-            stock_result["conditions"]["c2_above_sma200"] = r2
-        except Exception as e:
-            stock_result["conditions"]["c2_above_sma200"] = {
-                "passed": False, "detail": f"异常: {e}", "error": True}
-
-        try:
-            r3 = check_cd_breakout(
-                sym, exch,
-                lookback_daily_bars=lookback_daily,
-            )
-            stock_result["conditions"]["c3_cd_breakout"] = r3
-        except Exception as e:
-            stock_result["conditions"]["c3_cd_breakout"] = {
-                "passed": False, "detail": f"异常: {e}", "error": True}
+        checks = [
+            ("c1_daily_weekly_nx", lambda: check_daily_weekly_nx(sym, exch)),
+            ("c2_above_sma200",    lambda: check_above_sma200(sym, exch)),
+            ("c3_cd_breakout",     lambda: check_cd_breakout(
+                sym, exch, lookback_daily_bars=lookback_daily)),
+        ]
+        for key, fn in checks:
+            try:
+                stock_result["conditions"][key] = fn()
+            except Exception as e:
+                stock_result["conditions"][key] = {
+                    "passed": False, "detail": f"异常: {e}", "error": True}
 
         passed_count = sum(
             1 for c in stock_result["conditions"].values()
             if c and c.get("passed")
         )
         stock_result["passed_count"] = passed_count
-
-        elapsed = time.time() - t0
-        stock_result["check_time_s"] = round(elapsed, 1)
+        stock_result["check_time_s"] = round(time.time() - t0, 1)
 
         flags = "".join(
             "✅" if (stock_result["conditions"].get(k) or {}).get("passed") else "❌"
-            for k in condition_labels
+            for k in condition_keys
         )
-        print(f"  {flags}  {passed_count}/3  ({elapsed:.1f}s)")
+        print(f"  {flags}  {passed_count}/3  ({stock_result['check_time_s']}s)")
 
         payload["stocks"].append(stock_result)
         _save_json(output_path, payload)
 
-    # ── 汇总 ──────────────────────────────────────────────────────────
+    # ── 汇总 ─────────────────────────────────────────────────────────
     all_results = payload["stocks"]
     all_results.sort(key=lambda r: r.get("passed_count", 0), reverse=True)
 
@@ -273,16 +140,15 @@ def main():
     payload["meta"]["completed_at"] = datetime.now(timezone.utc).strftime(
         "%Y-%m-%dT%H:%M:%SZ"
     )
-
     summary = {"total": len(all_results)}
     for n in range(4):
-        group = [r for r in all_results if r.get("passed_count", 0) == n]
-        summary[f"passed_{n}"] = len(group)
+        summary[f"passed_{n}"] = sum(
+            1 for r in all_results if r.get("passed_count", 0) == n
+        )
     summary["full_pass_symbols"] = [
         r["symbol"] for r in all_results if r.get("passed_count", 0) == 3
     ]
     payload["summary"] = summary
-
     _save_json(output_path, payload)
 
     print(f"\n{'═' * 65}")
@@ -303,8 +169,8 @@ def main():
             print(f"\n  ★ {target}/3 条件通过: {len(group)} 只")
             for r in group:
                 missed = [
-                    dl for dl, cl in zip(display_labels, condition_labels)
-                    if not (r["conditions"].get(cl) or {}).get("passed")
+                    dl for dl, ck in zip(display_labels, condition_keys)
+                    if not (r["conditions"].get(ck) or {}).get("passed")
                 ]
                 print(f"    ⚠️  {r['symbol']:<8s} {r['name']:<30s} "
                       f"缺: {', '.join(missed)}")

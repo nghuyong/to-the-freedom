@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "market": "us",
+    "top_n": 200,
+    "total_stocks_scanned": 1,
+    "backtest_start": "2025-11-01",
+    "max_distance_pct": 5.0,
+    "min_hold_bars": 3,
+    "run_at": "2026-02-22T03:32:37Z"
+  },
+  "trades": [
+    {
+      "buy_date": "2025-12-23",
+      "buy_price": 90.03,
+      "sell_date": "2025-12-26",
+      "sell_price": 87.59,
+      "return_pct": -2.71,
+      "hold_days": 2,
+      "status": "closed",
+      "signal_date": "2025-12-19",
+      "first_above_date": "2025-12-19",
+      "symbol": "NBIS",
+      "name": "NBIS"
+    },
+    {
+      "buy_date": "2026-02-11",
+      "buy_price": 88.61,
+      "sell_date": null,
+      "sell_price": 97.92,
+      "return_pct": 10.51,
+      "hold_days": 6,
+      "status": "holding",
+      "signal_date": "2026-02-09",
+      "first_above_date": "2026-02-09",
+      "symbol": "NBIS",
+      "name": "NBIS"
+    }
+  ],
+  "summary": {
+    "total_trades": 2,
+    "closed_trades": 1,
+    "holding_trades": 1,
+    "symbols_traded": [
+      "NBIS"
+    ],
+    "closed_avg_return_pct": -2.71,
+    "win_rate_pct": 0.0
+  }
+}

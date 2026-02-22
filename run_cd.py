@@ -1,76 +1,38 @@
 """
-获取股票行情数据并计算 CD（MACD 背离）指标。
+CD 指标查看工具 — 获取股票行情并计算 MACD 背离信号。
 
 用法:
-    python run_cd.py HOOD          # 日线（默认）
-    python run_cd.py HOOD 4h       # 4 小时线
-    python run_cd.py HOOD 1w       # 周线
-
-依赖: pip install ta tvDatafeed
+    python run_cd.py HOOD                  # 日线（默认，NASDAQ）
+    python run_cd.py HOOD 4h               # 4 小时线
+    python run_cd.py HOOD 1w               # 周线
+    python run_cd.py CVX 1d NYSE           # 指定交易所
 """
 
 import sys
 
-from tvDatafeed import TvDatafeed, Interval
-
-from cd_indicator import compute_cd
-
-_TV_NBARS = 5000
-
-_INTERVAL_MAP = {
-    "1d": Interval.in_daily,
-    "4h": Interval.in_4_hour,
-    "1w": Interval.in_weekly,
-}
-
-_INTERVAL_LABEL = {
-    "1d": "日线",
-    "4h": "4h",
-    "1w": "周线",
-}
-
-
-def fetch_tv(ticker: str, interval: str, exchange: str = "NASDAQ"):
-    """从 TradingView 获取 K线数据。"""
-    tv = TvDatafeed()
-    df = tv.get_hist(
-        symbol=ticker,
-        exchange=exchange,
-        interval=_INTERVAL_MAP[interval],
-        n_bars=_TV_NBARS,
-    )
-    df = df.rename(
-        columns={
-            "open": "Open",
-            "high": "High",
-            "low": "Low",
-            "close": "Close",
-            "volume": "Volume",
-        }
-    )
-    return df
+from data.feed import fetch_tv, INTERVAL_MAP, INTERVAL_LABEL
+from indicators.cd import compute_cd
 
 
 def main():
-    ticker = sys.argv[1] if len(sys.argv) > 1 else "HOOD"
+    ticker   = sys.argv[1] if len(sys.argv) > 1 else "HOOD"
     interval = sys.argv[2] if len(sys.argv) > 2 else "1d"
+    exchange = sys.argv[3] if len(sys.argv) > 3 else "NASDAQ"
 
-    if interval not in _INTERVAL_MAP:
-        print(f"不支持的周期: {interval}，可选: {', '.join(_INTERVAL_MAP)}")
+    if interval not in INTERVAL_MAP:
+        print(f"不支持的周期: {interval}，可选: {', '.join(INTERVAL_MAP)}")
         sys.exit(1)
 
     print(f"正在获取 {ticker} 行情数据 ({interval}) ...")
 
-    df = fetch_tv(ticker, interval)
-    interval_label = _INTERVAL_LABEL[interval]
+    df = fetch_tv(ticker, interval, exchange=exchange)
+    interval_label = INTERVAL_LABEL[interval]
 
     if df is None or df.empty:
         print(f"未获取到 {ticker} 的行情数据，请检查股票代码是否正确。")
         sys.exit(1)
 
     result = compute_cd(df)
-
-    # ---------- 打印最新状态 ----------
     latest = result.iloc[-1]
     date_str = str(result.index[-1])
 
@@ -91,7 +53,6 @@ def main():
     if latest["SELL_CANCEL"]:
         print("  (顶背离消失)")
 
-    # ---------- 打印历史信号 ----------
     buys = result[result["BUY_SIGNAL"]]
     sells = result[result["SELL_SIGNAL"]]
 

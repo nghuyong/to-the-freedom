@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "market": "us",
+    "top_n": 200,
+    "total_stocks_scanned": 1,
+    "backtest_start": "2025-11-01",
+    "max_distance_pct": 5.0,
+    "min_hold_bars": 3,
+    "run_at": "2026-02-22T03:31:42Z"
+  },
+  "trades": [],
+  "summary": {
+    "total_trades": 0,
+    "closed_trades": 0,
+    "holding_trades": 0,
+    "symbols_traded": []
+  }
+}

@@ -1,13 +1,8 @@
 """
-MA 均线指标 — Python 实现
-
-支持的均线类型:
-  - SMA: 简单移动平均线 (Simple Moving Average)
-  - EMA: 指数移动平均线 (Exponential Moving Average)
+MA 均线指标 — 简单移动平均（SMA）和指数移动平均（EMA）。
 
 默认计算周期: 5, 10, 20, 50, 100, 200
-
-依赖: pip install ta
+输出列名格式: "MA{period}"（SMA）或 "EMA{period}"（EMA）
 """
 
 import pandas as pd
@@ -43,7 +38,9 @@ def compute_ma(
 
     ma_type = ma_type.upper()
     if ma_type not in ("SMA", "EMA"):
-        raise ValueError(f"Unsupported ma_type: {ma_type!r}, expected 'SMA' or 'EMA'")
+        raise ValueError(
+            f"Unsupported ma_type: {ma_type!r}, expected 'SMA' or 'EMA'"
+        )
 
     df = df.copy()
     prefix = "MA" if ma_type == "SMA" else "EMA"
@@ -51,8 +48,12 @@ def compute_ma(
     for period in sorted(periods):
         col_name = f"{prefix}{period}"
         if ma_type == "SMA":
-            df[col_name] = SMAIndicator(close=df[source], window=period).sma_indicator()
+            df[col_name] = SMAIndicator(
+                close=df[source], window=period
+            ).sma_indicator()
         else:
-            df[col_name] = EMAIndicator(close=df[source], window=period).ema_indicator()
+            df[col_name] = EMAIndicator(
+                close=df[source], window=period
+            ).ema_indicator()
 
     return df
