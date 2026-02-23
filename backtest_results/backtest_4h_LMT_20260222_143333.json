@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "strategy": "4h_blue_channel",
+    "market": "us",
+    "top_n": 200,
+    "total_stocks_scanned": 1,
+    "backtest_start": "2025-10-01",
+    "max_distance_pct": 5.0,
+    "min_hold_bars": 3,
+    "run_at": "2026-02-22T06:33:36Z"
+  },
+  "trades": [
+    {
+      "buy_date": "2025-12-08 22:30",
+      "buy_price": 462.48,
+      "sell_date": null,
+      "sell_price": 658.47,
+      "return_pct": 42.38,
+      "hold_bars": 100,
+      "status": "holding",
+      "signal_date": "2025-12-04 02:30",
+      "first_above_date": "2025-12-05 22:30",
+      "symbol": "LMT",
+      "name": "LMT"
+    }
+  ],
+  "summary": {
+    "total_trades": 1,
+    "closed_trades": 0,
+    "holding_trades": 1,
+    "symbols_traded": [
+      "LMT"
+    ]
+  }
+}

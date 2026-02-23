@@ -6,7 +6,8 @@
   C3. 日级别 NX: 蓝色上边缘 > 黄色下边缘
   C4. 股价 > 200 日均线（SMA200）
   C5. 近期出现4h级别 CD 抄底信号
-  C6. 股价连续 ≥ MIN_HOLD_BARS 根4h K线收盘高于4h级别蓝色下边缘（首次站上后未跌破）
+  C6. CD 信号后股价站上 4h 蓝色下边缘，允许至多一次跌破（须在 10 根K线内重新站上），
+      重站上后持续 ≥ MIN_HOLD_BARS 根4h K线且不再跌破
   C7. BB_4H ≤ 收盘价 ≤ BB_4H × (1 + MAX_DIST_PCT)，4h 级别
 
 买入价格: 4h 级别收盘价。
@@ -31,7 +32,7 @@ SKIP_LABELS: dict[str, str] = {
     "C5_no_cd":          "C5: 无4h CD抄底信号",
     "C6_no_first_above": "C6: CD信号后未站上BB_4H",
     "C6_hold_bars":      f"C6: 站上BB_4H不足{MIN_HOLD_BARS}根4h K线",
-    "C6_broke":          "C6: 站上后再次跌破BB_4H",
+    "C6_broke":          "C6: 跌破后10根内未恢复 或 恢复后再次跌破BB_4H",
     "C7_dist":           f"C7: 盘中低点距BB_4H超过{int(MAX_DIST_PCT * 100)}%",
 }
 
@@ -272,22 +273,58 @@ def backtest_single(
 
         first_above_date = str(bars.index[first_above_pos])[:16]
 
-        hold_bars_count = i - first_above_pos + 1
+        # 允许至多一次跌破：跌破后须在 10 根K线内重新站上，此后不可再跌破
+        # anchor_pos 是最终"持续站上"的起始位置（首站上 或 恢复后重站上）
+        anchor_pos = first_above_pos
+        break_pos = None
+        for j in range(first_above_pos, i + 1):
+            row_j = bars.iloc[j]
+            if not pd.isna(row_j["BB_4H"]) and row_j["Close"] < row_j["BB_4H"]:
+                break_pos = j
+                break
+
+        if break_pos is not None:
+            # 在 10 根 K 线内寻找恢复（重新站上）
+            recovery_pos = None
+            for j in range(break_pos + 1, min(break_pos + 11, i + 1)):
+                row_j = bars.iloc[j]
+                if not pd.isna(row_j["BB_4H"]) and row_j["Close"] >= row_j["BB_4H"]:
+                    recovery_pos = j
+                    break
+            if recovery_pos is None:
+                _skip("C6_broke")
+                if debug:
+                    print(
+                        _base +
+                        f"❌ C6: 跌破BB_4H后10根K线内未重新站上 "
+                        f"(跌破@{str(bars.index[break_pos])[:16]})"
+                    )
+                continue
+            anchor_pos = recovery_pos
+            # 恢复后不可再跌破
+            second_break = any(
+                (not pd.isna(bars.iloc[j]["BB_4H"]))
+                and bars.iloc[j]["Close"] < bars.iloc[j]["BB_4H"]
+                for j in range(recovery_pos, i + 1)
+            )
+            if second_break:
+                _skip("C6_broke")
+                if debug:
+                    print(
+                        _base +
+                        f"❌ C6: 重站上({str(bars.index[recovery_pos])[:16]})后再次跌破BB_4H"
+                    )
+                continue
+
+        hold_bars_count = i - anchor_pos + 1
         if hold_bars_count < min_hold_bars:
             _skip("C6_hold_bars")
             if debug:
-                print(_base + f"❌ C6: 首站上({first_above_date})至今仅 {hold_bars_count} 根 < {min_hold_bars} 根")
-            continue
-
-        still_holding = all(
-            (not pd.isna(bars.iloc[j]["BB_4H"]))
-            and bars.iloc[j]["Close"] >= bars.iloc[j]["BB_4H"]
-            for j in range(first_above_pos, i + 1)
-        )
-        if not still_holding:
-            _skip("C6_broke")
-            if debug:
-                print(_base + f"❌ C6: 首站上({first_above_date})后期间曾跌破BB_4H")
+                print(
+                    _base +
+                    f"❌ C6: 锚点({str(bars.index[anchor_pos])[:16]})至今仅 "
+                    f"{hold_bars_count} 根 < {min_hold_bars} 根"
+                )
             continue
 
         # C7: BB_4H ≤ 收盘价 ≤ BB_4H × (1 + MAX_DIST_PCT)
@@ -312,7 +349,8 @@ def backtest_single(
             print(
                 _base +
                 f"✅ 买入 @ {close:.3f}  BB_4H={bb_4h:.3f}  距离={dist*100:.2f}%  "
-                f"CD信号={signal_date}  首站上={first_above_date}  已站上{hold_bars_count}根"
+                f"CD信号={signal_date}  首站上={first_above_date}  "
+                f"锚点={str(bars.index[anchor_pos])[:16]}  已站上{hold_bars_count}根"
             )
 
     # 未平仓 → 以最新收盘价计算浮盈

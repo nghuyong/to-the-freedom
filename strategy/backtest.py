@@ -6,13 +6,11 @@
   C3. 日级别 NX: 蓝色上边缘 > 黄色下边缘
   C4. 股价 > 200 日均线（SMA200）
   C5. 近期出现日级别 CD 抄底信号
-  C6. 股价连续 ≥ 3 天收盘高于日级别蓝色下边缘（首次站上后未跌破）
-  C7. 股价距日级别蓝色下边缘 ≤ 5%
+  C6. 股价连续 ≥ MIN_HOLD_BARS 天收盘高于日级别蓝色下边缘（首次站上后未跌破）
+  C7. BB_D ≤ 收盘价 ≤ BB_D × (1 + MAX_DIST_PCT)
 
-卖出条件:
-  股价收盘跌破日级别蓝色下边缘（BB_D）
-
-假设: 以收盘价买入/卖出。
+买入价格: 收盘价。
+卖出条件: 股价收盘跌破日级别蓝色下边缘（BB_D），以收盘价卖出。
 """
 
 import pandas as pd
@@ -34,7 +32,7 @@ SKIP_LABELS: dict[str, str] = {
     "C6_no_first_above": "C6: CD信号后未站上BB_D",
     "C6_hold_bars":      f"C6: 站上BB_D不足{MIN_HOLD_BARS}天",
     "C6_broke":          "C6: 站上后再次跌破BB_D",
-    "C7_dist":           f"C7: 距BB_D超过{int(MAX_DIST_PCT * 100)}%",
+    "C7_dist":           f"C7: 盘中低点距BB_D超过{int(MAX_DIST_PCT * 100)}%",
 }
 
 
@@ -71,6 +69,7 @@ def backtest_single(
     ticker: str,
     exchange: str,
     start_date: str = "2026-01-01",
+    min_hold_bars: int = MIN_HOLD_BARS,
     debug: bool = False,
 ) -> tuple[list[dict], dict]:
     """对单只股票运行回测，返回 (交易列表, 跳过原因统计)。
@@ -246,10 +245,10 @@ def backtest_single(
         first_above_date = str(daily.index[first_above_pos])[:10]
 
         hold_bars = i - first_above_pos + 1
-        if hold_bars < MIN_HOLD_BARS:
+        if hold_bars < min_hold_bars:
             _skip("C6_hold_bars")
             if debug:
-                print(_base + f"❌ C6: 首站上({first_above_date})至今仅 {hold_bars} 天 < {MIN_HOLD_BARS} 天")
+                print(_base + f"❌ C6: 首站上({first_above_date})至今仅 {hold_bars} 天 < {min_hold_bars} 天")
             continue
 
         still_holding = all(
@@ -263,19 +262,19 @@ def backtest_single(
                 print(_base + f"❌ C6: 首站上({first_above_date})后期间曾跌破BB_D")
             continue
 
-        # C7: 当前收盘价距蓝色下边缘 ≤ MAX_DIST_PCT
+        # C7: BB_D ≤ 收盘价 ≤ BB_D × (1 + MAX_DIST_PCT)，以收盘价买入
         dist = (close - bb_d) / bb_d
-        if dist > MAX_DIST_PCT:
+        if not (bb_d <= close <= bb_d * (1 + MAX_DIST_PCT)):
             _skip("C7_dist")
             if debug:
                 print(
                     _base +
-                    f"❌ C7: 距BB_D={dist*100:.2f}% > {MAX_DIST_PCT*100:.0f}%"
-                    f"  (close={close:.3f}, BB_D={bb_d:.3f})"
+                    f"❌ C7: 收盘价={close:.3f} 距BB_D={dist*100:.2f}%"
+                    f"  (BB_D={bb_d:.3f}, 阈值={bb_d * (1 + MAX_DIST_PCT):.3f})"
                 )
             continue
 
-        # ── 全部条件满足 → 买入 ──────────────────────────────────────
+        # ── 全部条件满足 → 买入（收盘价）────────────────────────────────
         position = {
             "date": date_str, "price": close, "pos": i,
             "signal_date": signal_date,

@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "market": "us",
+    "top_n": 200,
+    "total_stocks_scanned": 1,
+    "backtest_start": "2025-11-01",
+    "max_distance_pct": 5.0,
+    "min_hold_bars": 3,
+    "run_at": "2026-02-22T05:33:16Z"
+  },
+  "trades": [
+    {
+      "buy_date": "2025-12-12",
+      "buy_price": 148.537,
+      "sell_date": "2025-12-15",
+      "sell_price": 148.349,
+      "return_pct": -0.13,
+      "hold_days": 1,
+      "status": "closed",
+      "signal_date": "2025-12-10",
+      "first_above_date": "2025-12-10",
+      "symbol": "CVX",
+      "name": "CVX"
+    }
+  ],
+  "summary": {
+    "total_trades": 1,
+    "closed_trades": 1,
+    "holding_trades": 0,
+    "symbols_traded": [
+      "CVX"
+    ],
+    "closed_avg_return_pct": -0.13,
+    "win_rate_pct": 0.0
+  }
+}

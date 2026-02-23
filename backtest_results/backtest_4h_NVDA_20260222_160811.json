@@ -1,0 +1,37 @@
+{
+  "meta": {
+    "strategy": "4h_blue_channel",
+    "market": "us",
+    "top_n": 200,
+    "total_stocks_scanned": 1,
+    "backtest_start": "2025-01-01",
+    "max_distance_pct": 5.0,
+    "min_hold_bars": 3,
+    "run_at": "2026-02-22T08:08:16Z"
+  },
+  "trades": [
+    {
+      "buy_date": "2025-12-22 22:30",
+      "buy_price": 183.225,
+      "sell_date": "2026-01-08 22:30",
+      "sell_price": 184.75,
+      "return_pct": 0.83,
+      "hold_bars": 21,
+      "status": "closed",
+      "signal_date": "2025-12-19 22:30",
+      "first_above_date": "2025-12-19 22:30",
+      "symbol": "NVDA",
+      "name": "NVDA"
+    }
+  ],
+  "summary": {
+    "total_trades": 1,
+    "closed_trades": 1,
+    "holding_trades": 0,
+    "symbols_traded": [
+      "NVDA"
+    ],
+    "closed_avg_return_pct": 0.83,
+    "win_rate_pct": 100.0
+  }
+}

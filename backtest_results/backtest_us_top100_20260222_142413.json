@@ -1,0 +1,119 @@
+{
+  "meta": {
+    "market": "us",
+    "top_n": 100,
+    "total_stocks_scanned": 100,
+    "backtest_start": "2025-12-01",
+    "max_distance_pct": 5.0,
+    "min_hold_bars": 3,
+    "run_at": "2026-02-22T06:33:03Z"
+  },
+  "trades": [
+    {
+      "buy_date": "2025-12-05",
+      "buy_price": 71.75,
+      "sell_date": "2025-12-08",
+      "sell_price": 70.15,
+      "return_pct": -2.23,
+      "hold_days": 1,
+      "status": "closed",
+      "signal_date": "2025-12-03",
+      "first_above_date": "2025-12-03",
+      "symbol": "TCOM",
+      "name": "携程网"
+    },
+    {
+      "buy_date": "2025-12-10",
+      "buy_price": 467.94,
+      "sell_date": null,
+      "sell_price": 658.26,
+      "return_pct": 40.67,
+      "hold_days": 48,
+      "status": "holding",
+      "signal_date": "2025-12-03",
+      "first_above_date": "2025-12-08",
+      "symbol": "LMT",
+      "name": "洛克希德马丁"
+    },
+    {
+      "buy_date": "2025-12-12",
+      "buy_price": 148.537,
+      "sell_date": "2025-12-15",
+      "sell_price": 148.349,
+      "return_pct": -0.13,
+      "hold_days": 1,
+      "status": "closed",
+      "signal_date": "2025-12-10",
+      "first_above_date": "2025-12-10",
+      "symbol": "CVX",
+      "name": "雪佛龙"
+    },
+    {
+      "buy_date": "2025-12-23",
+      "buy_price": 90.03,
+      "sell_date": "2025-12-26",
+      "sell_price": 87.59,
+      "return_pct": -2.71,
+      "hold_days": 2,
+      "status": "closed",
+      "signal_date": "2025-12-19",
+      "first_above_date": "2025-12-19",
+      "symbol": "NBIS",
+      "name": "NEBIUS"
+    },
+    {
+      "buy_date": "2026-01-15",
+      "buy_price": 91.45,
+      "sell_date": "2026-01-23",
+      "sell_price": 87.63,
+      "return_pct": -4.18,
+      "hold_days": 5,
+      "status": "closed",
+      "signal_date": "2026-01-02",
+      "first_above_date": "2026-01-05",
+      "symbol": "OKLO",
+      "name": "Oklo Inc"
+    },
+    {
+      "buy_date": "2026-01-26",
+      "buy_price": 63.44,
+      "sell_date": "2026-01-30",
+      "sell_price": 58.77,
+      "return_pct": -7.36,
+      "hold_days": 4,
+      "status": "closed",
+      "signal_date": "2026-01-02",
+      "first_above_date": "2026-01-02",
+      "symbol": "MP",
+      "name": "MP Materials"
+    },
+    {
+      "buy_date": "2026-02-11",
+      "buy_price": 88.61,
+      "sell_date": null,
+      "sell_price": 97.92,
+      "return_pct": 10.51,
+      "hold_days": 6,
+      "status": "holding",
+      "signal_date": "2026-02-09",
+      "first_above_date": "2026-02-09",
+      "symbol": "NBIS",
+      "name": "NEBIUS"
+    }
+  ],
+  "summary": {
+    "total_trades": 7,
+    "closed_trades": 5,
+    "holding_trades": 2,
+    "symbols_traded": [
+      "CVX",
+      "LMT",
+      "MP",
+      "NBIS",
+      "OKLO",
+      "TCOM"
+    ],
+    "closed_avg_return_pct": -3.32,
+    "win_rate_pct": 0.0
+  }
+}

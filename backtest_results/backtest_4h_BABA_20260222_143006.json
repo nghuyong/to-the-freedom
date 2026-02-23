@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "strategy": "4h_blue_channel",
+    "market": "us",
+    "top_n": 200,
+    "total_stocks_scanned": 1,
+    "backtest_start": "2025-10-01",
+    "max_distance_pct": 5.0,
+    "min_hold_bars": 3,
+    "run_at": "2026-02-22T06:30:10Z"
+  },
+  "trades": [
+    {
+      "buy_date": "2025-11-25 22:30",
+      "buy_price": 158.5,
+      "sell_date": "2025-11-26 02:30",
+      "sell_price": 157.1,
+      "return_pct": -0.88,
+      "hold_bars": 1,
+      "status": "closed",
+      "signal_date": "2025-11-24 22:30",
+      "first_above_date": "2025-11-24 22:30",
+      "symbol": "BABA",
+      "name": "BABA"
+    },
+    {
+      "buy_date": "2026-01-05 22:30",
+      "buy_price": 155.155,
+      "sell_date": "2026-01-07 22:30",
+      "sell_price": 147.51,
+      "return_pct": -4.93,
+      "hold_bars": 4,
+      "status": "closed",
+      "signal_date": "2026-01-02 22:30",
+      "first_above_date": "2026-01-02 22:30",
+      "symbol": "BABA",
+      "name": "BABA"
+    }
+  ],
+  "summary": {
+    "total_trades": 2,
+    "closed_trades": 2,
+    "holding_trades": 0,
+    "symbols_traded": [
+      "BABA"
+    ],
+    "closed_avg_return_pct": -2.9,
+    "win_rate_pct": 0.0
+  }
+}

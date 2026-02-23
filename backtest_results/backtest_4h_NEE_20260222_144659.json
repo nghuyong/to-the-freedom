@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "strategy": "4h_blue_channel",
+    "market": "us",
+    "top_n": 200,
+    "total_stocks_scanned": 1,
+    "backtest_start": "2025-10-01",
+    "max_distance_pct": 5.0,
+    "min_hold_bars": 3,
+    "run_at": "2026-02-22T06:47:05Z"
+  },
+  "trades": [
+    {
+      "buy_date": "2026-01-12 22:30",
+      "buy_price": 80.57,
+      "sell_date": null,
+      "sell_price": 92.18,
+      "return_pct": 14.41,
+      "hold_bars": 55,
+      "status": "holding",
+      "signal_date": "2026-01-09 22:30",
+      "first_above_date": "2026-01-09 22:30",
+      "symbol": "NEE",
+      "name": "NEE"
+    }
+  ],
+  "summary": {
+    "total_trades": 1,
+    "closed_trades": 0,
+    "holding_trades": 1,
+    "symbols_traded": [
+      "NEE"
+    ]
+  }
+}

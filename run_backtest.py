@@ -6,17 +6,20 @@
   C3. 日级别 NX: 蓝色上边缘 > 黄色下边缘
   C4. 股价 > 200 日均线（SMA200）
   C5. 近期出现日级别 CD 抄底信号
-  C6. 股价连续 ≥ 3 天收盘高于日级别蓝色下边缘
-  C7. 股价距日级别蓝色下边缘 ≤ 5%
+  C6. 股价连续 ≥ MIN_HOLD_BARS 天收盘高于日级别蓝色下边缘（首次站上后未跌破，默认 3 天）
+  C7. BB_D ≤ 收盘价 ≤ BB_D × 1.05，以收盘价买入
 
 卖出条件: 股价收盘跌破日级别蓝色下边缘
 
 用法:
-    python run_backtest.py                            # 美股 Top200, 2026-01-01 至今
-    python run_backtest.py --start 2025-10-01         # 自定义起始日期
-    python run_backtest.py --top 100                  # Top 100
-    python run_backtest.py --symbol BABA TSLA AAPL    # 指定股票
-    python run_backtest.py --debug                    # 开启逐日日志
+    python run_backtest.py                                      # 美股 Top200, 2026-01-01 至今
+    python run_backtest.py --start 2025-10-01                   # 自定义起始日期
+    python run_backtest.py --top 100                            # Top 100
+    python run_backtest.py --symbol BABA TSLA AAPL              # 指定美股
+    python run_backtest.py --market hk --top 50                 # 港股 Top50
+    python run_backtest.py --symbol 9992 --market hk            # 港股: 泡泡玛特
+    python run_backtest.py --symbol 700 9988 --market hk        # 港股: 腾讯 + 阿里
+    python run_backtest.py --debug                              # 开启逐日日志
 """
 
 import argparse
@@ -25,7 +28,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from strategy.backtest import backtest_single, SKIP_LABELS
+from strategy.backtest import backtest_single, SKIP_LABELS, MIN_HOLD_BARS
 from strategy.stocks import NumpyEncoder, load_top_stocks, build_exchange_lookup, resolve_exchange
 
 _BACKTEST_START = "2026-01-01"
@@ -143,6 +146,8 @@ def main():
                     help=f"回测起始日期（默认 {_BACKTEST_START}）")
     ap.add_argument("-o", "--output", default=None,
                     help="输出文件路径（默认自动生成）")
+    ap.add_argument("--min-hold", type=int, default=MIN_HOLD_BARS,
+                    help=f"C6: 首次站上 BB_D 后至少持续天数（默认 {MIN_HOLD_BARS}）")
     ap.add_argument("--debug", action="store_true",
                     help="开启逐日 debug 日志（每只股票打印指标值与条件判断）")
     args = ap.parse_args()
@@ -154,6 +159,9 @@ def main():
         stocks = []
         for sym in args.symbol:
             sym = sym.upper()
+            # 港股代码去掉前导零（如 "09992" → "9992"），与 TradingView 保持一致
+            if args.market == "hk":
+                sym = sym.lstrip("0") or "0"
             exch = (
                 args.exchange.upper()
                 if args.exchange
@@ -191,7 +199,11 @@ def main():
             if args.debug:
                 print()
                 print(f"  ┌─ DEBUG: {sym} {'─' * 60}")
-            trades, skip_counts = backtest_single(sym, exch, args.start, debug=args.debug)
+            trades, skip_counts = backtest_single(
+                sym, exch, args.start,
+                min_hold_bars=args.min_hold,
+                debug=args.debug,
+            )
             for t in trades:
                 t["symbol"] = sym
                 t["name"] = name
@@ -236,7 +248,7 @@ def main():
         "total_stocks_scanned": total,
         "backtest_start": args.start,
         "max_distance_pct": 5.0,
-        "min_hold_bars": 3,
+        "min_hold_bars": args.min_hold,
         "run_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
     _save_results(output_path, meta, all_trades)
